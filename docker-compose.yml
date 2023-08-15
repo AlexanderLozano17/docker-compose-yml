@@ -1,0 +1,82 @@
+version: '3.9'
+services:
+  #contenedor PORTAINER
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    ports:
+      - 8000:8000
+      - 9443:9443
+  #contenedor MYSQL
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345
+    volumes:
+      - mysql:/var/lib/mysql
+  #contenedor POSTGRES
+  postgres:
+    image: postgres:14.4
+    container_name: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=12345
+    volumes:
+      - postgres:/var/lib/postgresql/data
+  #contenedor PGADMIN
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    restart: always
+    ports:
+      - 5050:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=alexanderlozano950@outlook.com
+      - PGADMIN_DEFAULT_PASSWORD=12345
+    volumes:
+      - pgadmin:var/lib/pgadmin
+  #contenedor JENKINS
+  jenkins:
+    image: jenkins/jenkins:lts-jdk11
+    container_name: jenkins
+    restart: on-failure
+    privileged: true
+    ports:
+      - 8090:8080
+      - 50000:50000
+    volumes:
+      - jenkins:/var/jenkins_home
+  #contenedor ARTEMIS
+  mqartemis:
+    image: vromero/activemq-artemis:latest
+    container_name: mqartemis
+    restart: on-failure
+    privileged: true
+    ports:
+      - 8161:8161
+      - 61616:61616
+    environment:
+      - ARTEMIS_USERNAME=root
+      - ARTEMIS_PASSWORD=12345
+    volumes:
+      - artemis:/data/artemis
+volumes:
+  mysql:
+  postgres:
+  pgadmin:
+  jenkins:
+  artemis:
