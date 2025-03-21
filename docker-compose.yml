@@ -1,82 +1,130 @@
 version: '3.9'
 services:
-  #contenedor PORTAINER
+  # Contenedor PORTAINER
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
     restart: always
     security_opt:
-      - no-new-privileges:true
+      - "no-new-privileges:true"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./portainer-data:/data
     ports:
-      - 8000:8000
-      - 9443:9443
-  #contenedor MYSQL
+      - "8000:8000"
+      - "9443:9443"
+
+  # Contenedor MYSQL
   mysql:
     image: mysql:latest
     container_name: mysql
     restart: always
     ports:
-      - 3306:3306
+      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=12345
     volumes:
       - mysql:/var/lib/mysql
-  #contenedor POSTGRES
+
+  # Contenedor POSTGRES
   postgres:
     image: postgres:14.4
     container_name: postgres
     restart: always
     ports:
-      - 5432:5432
+      - "5432:5432"
     environment:
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=12345
     volumes:
       - postgres:/var/lib/postgresql/data
-  #contenedor PGADMIN
+
+  # Contenedor PGADMIN
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4
     restart: always
+    depends_on:
+      - postgres
     ports:
-      - 5050:80
+      - "5050:80"
     environment:
       - PGADMIN_DEFAULT_EMAIL=alexanderlozano950@outlook.com
       - PGADMIN_DEFAULT_PASSWORD=12345
     volumes:
-      - pgadmin:var/lib/pgadmin
-  #contenedor JENKINS
+      - pgadmin:/var/lib/pgadmin
+
+  # Contenedor JENKINS
   jenkins:
     image: jenkins/jenkins:lts-jdk11
     container_name: jenkins
     restart: on-failure
     privileged: true
+    depends_on:
+      - mysql
     ports:
-      - 8090:8080
-      - 50000:50000
+      - "8090:8080"
+      - "50000:50000"
     volumes:
       - jenkins:/var/jenkins_home
-  #contenedor ARTEMIS
+
+  # Contenedor ARTEMIS (ActiveMQ)
   mqartemis:
     image: vromero/activemq-artemis:latest
     container_name: mqartemis
     restart: on-failure
     privileged: true
     ports:
-      - 8161:8161
-      - 61616:61616
+      - "8161:8161"
+      - "61616:61616"
     environment:
       - ARTEMIS_USERNAME=root
       - ARTEMIS_PASSWORD=12345
     volumes:
-      - artemis:/data/artemis
+      - artemis:/var/lib/artemis
+
+  # Contenedor ZOOKEEPER (Requerido por Kafka)
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    restart: always
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    networks:
+      - kafka_network
+    volumes:
+      - zookeeper:/bitnami/zookeeper
+
+  # Contenedor KAFKA
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+    networks:
+      - kafka_network
+    volumes:
+      - kafka:/bitnami/kafka
+
+networks:
+  kafka_network:
+
 volumes:
   mysql:
   postgres:
   pgadmin:
   jenkins:
   artemis:
+  zookeeper:
+  kafka:
