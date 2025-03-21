@@ -14,6 +14,9 @@ services:
     ports:
       - "8000:8000"
       - "9443:9443"
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=123456789123
 
   # Contenedor MYSQL
   mysql:
